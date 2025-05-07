@@ -10,6 +10,21 @@ class ResultWidget extends StatelessWidget {
   Widget build(BuildContext context) {
     return Consumer<LetterTracingViewModel>(
       builder: (context, viewModel, child) {
+        // Check if any stroke went outside the boundary
+        bool hasOutsideBoundary = false;
+        for (var result in viewModel.strokeResults) {
+          if (result?.isOutsideBoundary ?? false) {
+            hasOutsideBoundary = true;
+            break;
+          }
+        }
+
+        // Set the result message based on success and boundary check
+        String resultMessage = "Failed";
+        if (viewModel.isSuccess) {
+          resultMessage = "Success";
+        }
+
         return Container(
           width: double.infinity,
           padding: const EdgeInsets.symmetric(vertical: 20, horizontal: 16),
@@ -38,7 +53,7 @@ class ResultWidget extends StatelessWidget {
                   ),
                   const SizedBox(width: 12),
                   Text(
-                    viewModel.isSuccess ? 'Great Job!' : 'Try Again!',
+                    resultMessage, // Use the simplified result message
                     style: TextStyle(
                       fontFamily: 'Comic Sans MS',
                       fontSize: 28,
@@ -61,9 +76,11 @@ class ResultWidget extends StatelessWidget {
                     color: Colors.white.withOpacity(0.7),
                     borderRadius: BorderRadius.circular(12),
                   ),
-                  child: const Text(
-                    "Make sure you trace the entire letter! Both the curved top and the diagonal leg need to be complete.",
-                    style: TextStyle(
+                  child: Text(
+                    hasOutsideBoundary
+                        ? "Please stay inside the lines and follow the letter path!"
+                        : "Make sure you trace the entire letter! Both the curved top and the diagonal leg need to be complete.",
+                    style: const TextStyle(
                       fontFamily: 'Comic Sans MS',
                       fontSize: 18,
                       fontWeight: FontWeight.w600,

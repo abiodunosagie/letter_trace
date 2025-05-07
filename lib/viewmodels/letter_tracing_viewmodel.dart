@@ -51,6 +51,96 @@ class LetterTracingViewModel extends ChangeNotifier {
   }
 
   // Methods
+
+  StrokeResult _validateStroke() {
+    // Get the current path
+    final Path expectedPath = letter.strokePaths[_currentStrokeIndex];
+
+    // Get points along the path for coverage validation
+    List<Offset> pathPoints = _getPathPoints(expectedPath);
+
+    // Count points that are on or near the path
+    int pointsOnPath = 0;
+    int totalPoints = _strokes[_currentStrokeIndex].length;
+
+    // Count how many points are significantly outside the boundary
+    int pointsOutsideBoundary = 0;
+    final double boundaryThreshold =
+        letter.pathTolerance * 1.5; // Stricter boundary check
+
+    // Check how many user points are near the path
+    for (final point in _strokes[_currentStrokeIndex]) {
+      if (_isPointNearPath(point, expectedPath)) {
+        pointsOnPath++;
+      }
+
+      // Check if this point is significantly outside the boundary
+      if (!_isPointNearPathWithThreshold(
+          point, expectedPath, boundaryThreshold)) {
+        pointsOutsideBoundary++;
+      }
+    }
+
+    // Calculate accuracy of user's stroke
+    final double accuracy = pointsOnPath / totalPoints;
+
+    // Calculate the percentage of points outside the boundary
+    final double outsideBoundaryPercentage =
+        pointsOutsideBoundary / totalPoints;
+
+    // If more than 15% of points are outside the boundary, consider it as outside
+    final bool isOutsideBoundary = outsideBoundaryPercentage > 0.15;
+
+    // Check if the user covered enough of the expected path
+    int pathCoverage = 0;
+    for (final pathPoint in pathPoints) {
+      if (_isAnyUserPointNear(pathPoint, _strokes[_currentStrokeIndex])) {
+        pathCoverage++;
+      }
+    }
+
+    // Calculate how much of the path was covered (crucial for completeness)
+    final double coverageRatio = pathCoverage / pathPoints.length;
+
+    // For stroke 1 (vertical line), 70% coverage is required
+    // For stroke 2 (curve and diagonal), 80% coverage is required for both parts
+    double requiredCoverage = _currentStrokeIndex == 0 ? 0.7 : 0.8;
+
+    // Need both reasonable accuracy and good coverage to be valid
+    // Also fail if there are too many points outside the boundary
+    if (isOutsideBoundary) {
+      return StrokeResult.invalid(accuracy, isOutsideBoundary: true);
+    } else if (accuracy > 0.45 && coverageRatio > requiredCoverage) {
+      return StrokeResult.valid(accuracy);
+    } else {
+      return StrokeResult.invalid(accuracy);
+    }
+  }
+
+  // Add this new method to check if a point is near a path with custom threshold
+  bool _isPointNearPathWithThreshold(
+      Offset point, Path path, double threshold) {
+    // Create a virtual path metric to measure distances
+    final ui.PathMetrics metrics = path.computeMetrics();
+
+    // Check all segments of the path
+    for (final metric in metrics) {
+      // Sample points very densely for better path detection
+      for (double t = 0.0; t <= metric.length; t += 0.5) {
+        final tangent = metric.getTangentForOffset(t);
+        if (tangent != null) {
+          final pathPoint = tangent.position;
+          final distance = (point - pathPoint).distance;
+          if (distance < threshold) {
+            return true;
+          }
+        }
+      }
+    }
+
+    return false;
+  }
+
   void startStroke(Offset position) {
     if (_isCompleted || _currentStrokeIndex >= letter.strokeCount) return;
 
@@ -119,51 +209,6 @@ class LetterTracingViewModel extends ChangeNotifier {
     _isCompleted = false;
     _isSuccess = false;
     notifyListeners();
-  }
-
-  // Private methods
-  StrokeResult _validateStroke() {
-    // Get the current path
-    final Path expectedPath = letter.strokePaths[_currentStrokeIndex];
-
-    // Get points along the path for coverage validation
-    List<Offset> pathPoints = _getPathPoints(expectedPath);
-
-    // Count points that are on or near the path
-    int pointsOnPath = 0;
-    int totalPoints = _strokes[_currentStrokeIndex].length;
-
-    // Check how many user points are near the path
-    for (final point in _strokes[_currentStrokeIndex]) {
-      if (_isPointNearPath(point, expectedPath)) {
-        pointsOnPath++;
-      }
-    }
-
-    // Calculate accuracy of user's stroke
-    final double accuracy = pointsOnPath / totalPoints;
-
-    // Check if the user covered enough of the expected path
-    int pathCoverage = 0;
-    for (final pathPoint in pathPoints) {
-      if (_isAnyUserPointNear(pathPoint, _strokes[_currentStrokeIndex])) {
-        pathCoverage++;
-      }
-    }
-
-    // Calculate how much of the path was covered (crucial for completeness)
-    final double coverageRatio = pathCoverage / pathPoints.length;
-
-    // For stroke 1 (vertical line), 70% coverage is required
-    // For stroke 2 (curve and diagonal), 80% coverage is required for both parts
-    double requiredCoverage = _currentStrokeIndex == 0 ? 0.7 : 0.8;
-
-    // Need both reasonable accuracy and good coverage to be valid
-    if (accuracy > 0.45 && coverageRatio > requiredCoverage) {
-      return StrokeResult.valid(accuracy);
-    } else {
-      return StrokeResult.invalid(accuracy);
-    }
   }
 
   // Get points along the path to check for coverage

@@ -3,11 +3,13 @@ class StrokeResult {
   final bool isValid;
   final double accuracy;
   final String message;
+  final bool isOutsideBoundary; // Add this new property
 
   StrokeResult({
     required this.isValid,
     required this.accuracy,
     required this.message,
+    this.isOutsideBoundary = false, // Default to false
   });
 
   factory StrokeResult.valid(double accuracy) {
@@ -29,11 +31,13 @@ class StrokeResult {
     );
   }
 
-  factory StrokeResult.invalid(double accuracy) {
+  factory StrokeResult.invalid(double accuracy,
+      {bool isOutsideBoundary = false}) {
     return StrokeResult(
       isValid: false,
       accuracy: accuracy,
-      message: "Try again!",
+      message: isOutsideBoundary ? "Stay inside the lines!" : "Try again!",
+      isOutsideBoundary: isOutsideBoundary,
     );
   }
 }
