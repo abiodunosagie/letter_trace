@@ -53,6 +53,28 @@ class ResultWidget extends StatelessWidget {
 
               const SizedBox(height: 16),
 
+              // Add more specific feedback about the tracing
+              if (!viewModel.isSuccess)
+                Container(
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: Colors.white.withOpacity(0.7),
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: const Text(
+                    "Make sure you trace the entire letter! Both the curved top and the diagonal leg need to be complete.",
+                    style: TextStyle(
+                      fontFamily: 'Comic Sans MS',
+                      fontSize: 18,
+                      fontWeight: FontWeight.w600,
+                      color: Colors.red,
+                    ),
+                    textAlign: TextAlign.center,
+                  ),
+                ),
+
+              const SizedBox(height: 16),
+
               // Try again or continue button
               ElevatedButton(
                 onPressed: () => viewModel.resetTracing(),

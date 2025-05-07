@@ -93,10 +93,10 @@ class LetterRModel implements LetterModel {
         140 // end point
         );
 
-    // Move to where the diagonal leg starts
-    path.moveTo(80, 140);
-
-    // Draw the diagonal leg with a straighter line
+    // Move to where the diagonal leg starts and create a separate path segment
+    // This is crucial to ensure we can check if both parts of the stroke are complete
+    path.moveTo(50, 140);
+    path.lineTo(80, 140);
     path.lineTo(140, 240);
 
     return path;

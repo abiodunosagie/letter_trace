@@ -42,19 +42,19 @@ class LetterPainter extends CustomPainter {
       ..strokeCap = StrokeCap.round
       ..strokeJoin = StrokeJoin.round;
 
-    // Paint for completed valid path
+    // Paint for completed valid path - maintain thick stroke
     final Paint validPaint = Paint()
       ..color = Colors.green.withOpacity(0.8)
       ..style = PaintingStyle.stroke
-      ..strokeWidth = 12.0
+      ..strokeWidth = 20.0 // Keep thick stroke for completed strokes
       ..strokeCap = StrokeCap.round
       ..strokeJoin = StrokeJoin.round;
 
-    // Paint for completed invalid path
+    // Paint for completed invalid path - maintain thick stroke
     final Paint invalidPaint = Paint()
       ..color = Colors.red.withOpacity(0.8)
       ..style = PaintingStyle.stroke
-      ..strokeWidth = 12.0
+      ..strokeWidth = 20.0 // Keep thick stroke for completed strokes
       ..strokeCap = StrokeCap.round
       ..strokeJoin = StrokeJoin.round;
 
