@@ -1,9 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:letter_trace/models/letter_a_model.dart';
 import 'package:letter_trace/viewmodels/letter_tracing_viewmodel.dart';
 import 'package:letter_trace/views/letter_tracing_screen.dart';
 import 'package:provider/provider.dart';
-
-import 'models/letter_r_model.dart';
 
 class App extends StatelessWidget {
   const App({Key? key}) : super(key: key);
@@ -14,7 +13,7 @@ class App extends StatelessWidget {
       providers: [
         ChangeNotifierProvider(
           create: (_) => LetterTracingViewModel(
-            letter: LetterRModel(),
+            letter: LetterAModel(),
           ),
         ),
       ],
