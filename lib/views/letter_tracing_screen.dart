@@ -8,7 +8,7 @@ import '../widgets/result_widget.dart';
 import 'letter_painter.dart';
 
 class LetterTracingScreen extends StatefulWidget {
-  const LetterTracingScreen({Key? key}) : super(key: key);
+  const LetterTracingScreen({super.key});
 
   @override
   State<LetterTracingScreen> createState() => _LetterTracingScreenState();
@@ -39,7 +39,7 @@ class _LetterTracingScreenState extends State<LetterTracingScreen> {
             begin: Alignment.topCenter,
             end: Alignment.bottomCenter,
             colors: [
-              Theme.of(context).colorScheme.background,
+              Theme.of(context).colorScheme.surface,
               Colors.white,
             ],
           ),
@@ -76,7 +76,6 @@ class _LetterTracingScreenState extends State<LetterTracingScreen> {
     return Consumer<LetterTracingViewModel>(
       builder: (context, viewModel, child) {
         return Container(
-          key: _drawingAreaKey,
           margin: const EdgeInsets.all(20),
           decoration: BoxDecoration(
             color: Colors.white,
@@ -123,6 +122,7 @@ class _LetterTracingScreenState extends State<LetterTracingScreen> {
                 child: ClipRRect(
                   borderRadius: BorderRadius.circular(16),
                   child: CustomPaint(
+                    key: _drawingAreaKey,
                     painter: LetterPainter(
                       letterModel: viewModel.letter,
                       strokes: viewModel.strokes,

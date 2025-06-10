@@ -4,7 +4,7 @@ import 'package:provider/provider.dart';
 import '../../viewmodels/letter_tracing_viewmodel.dart';
 
 class InstructionWidget extends StatelessWidget {
-  const InstructionWidget({Key? key}) : super(key: key);
+  const InstructionWidget({super.key});
 
   @override
   Widget build(BuildContext context) {

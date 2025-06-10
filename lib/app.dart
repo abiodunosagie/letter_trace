@@ -1,11 +1,13 @@
 import 'package:flutter/material.dart';
+import 'package:letter_trace/models/dynamic_letter_model.dart';
 import 'package:letter_trace/models/letter_a_model.dart';
+import 'package:letter_trace/resources/complete_implementation.dart';
 import 'package:letter_trace/viewmodels/letter_tracing_viewmodel.dart';
 import 'package:letter_trace/views/letter_tracing_screen.dart';
 import 'package:provider/provider.dart';
 
 class App extends StatelessWidget {
-  const App({Key? key}) : super(key: key);
+  const App({super.key});
 
   @override
   Widget build(BuildContext context) {
@@ -13,7 +15,7 @@ class App extends StatelessWidget {
       providers: [
         ChangeNotifierProvider(
           create: (_) => LetterTracingViewModel(
-            letter: LetterAModel(),
+            letter: LetterModelFactory.createLetter('S', 'en'),
           ),
         ),
       ],
