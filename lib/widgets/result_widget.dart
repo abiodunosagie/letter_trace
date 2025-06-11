@@ -4,7 +4,7 @@ import 'package:provider/provider.dart';
 import '../../viewmodels/letter_tracing_viewmodel.dart';
 
 class ResultWidget extends StatelessWidget {
-  const ResultWidget({Key? key}) : super(key: key);
+  const ResultWidget({super.key});
 
   @override
   Widget build(BuildContext context) {

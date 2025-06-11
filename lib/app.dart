@@ -1,6 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:letter_trace/models/dynamic_letter_model.dart';
-import 'package:letter_trace/models/letter_a_model.dart';
 import 'package:letter_trace/resources/complete_implementation.dart';
 import 'package:letter_trace/viewmodels/letter_tracing_viewmodel.dart';
 import 'package:letter_trace/views/letter_tracing_screen.dart';

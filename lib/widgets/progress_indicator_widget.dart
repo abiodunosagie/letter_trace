@@ -4,7 +4,7 @@ import 'package:provider/provider.dart';
 import '../../viewmodels/letter_tracing_viewmodel.dart';
 
 class StrokeProgressWidget extends StatelessWidget {
-  const StrokeProgressWidget({Key? key}) : super(key: key);
+  const StrokeProgressWidget({super.key});
 
   @override
   Widget build(BuildContext context) {

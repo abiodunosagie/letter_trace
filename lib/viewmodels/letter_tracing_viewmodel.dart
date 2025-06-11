@@ -156,7 +156,9 @@ class LetterTracingViewModel extends ChangeNotifier {
   void updateStroke(Offset position) {
     if (!_isDrawing ||
         _isCompleted ||
-        _currentStrokeIndex >= letter.strokeCount) return;
+        _currentStrokeIndex >= letter.strokeCount) {
+      return;
+    }
 
     // Convert screen position to local path coordinates
     final localPoint = letter.globalToLocal(position);
