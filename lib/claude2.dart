@@ -1,6 +1,7 @@
+import 'dart:math' as math;
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'dart:math' as math;
 
 void main() {
   runApp(MyApp());
@@ -32,32 +33,31 @@ class LetterTracingScreen extends StatefulWidget {
 
 class _LetterTracingScreenState extends State<LetterTracingScreen>
     with TickerProviderStateMixin {
-  
   // Think of these as the "game state" variables
   late AnimationController _celebrationController;
   late Animation<double> _celebrationAnimation;
-  
+
   // Path tracking - like a map of where the user should trace
   final PathTracker _pathTracker = PathTracker();
-  
+
   // Current tracing state
   Offset? _currentFingerPosition;
   bool _isTracing = false;
   double _totalProgress = 0.0;
-  
+
   // Visual feedback
   bool _showCelebration = false;
-  
+
   @override
   void initState() {
     super.initState();
-    
+
     // Setup celebration animation (like confetti when they finish)
     _celebrationController = AnimationController(
       duration: Duration(milliseconds: 1000),
       vsync: this,
     );
-    
+
     _celebrationAnimation = Tween<double>(
       begin: 0.0,
       end: 1.0,
@@ -65,17 +65,17 @@ class _LetterTracingScreenState extends State<LetterTracingScreen>
       parent: _celebrationController,
       curve: Curves.elasticOut,
     ));
-    
+
     // Initialize the letter "I" path
     _pathTracker.setupLetterI();
   }
-  
+
   @override
   void dispose() {
     _celebrationController.dispose();
     super.dispose();
   }
-  
+
   void _handlePanStart(DragStartDetails details) {
     // Check if they're starting at the correct arrow position
     if (_pathTracker.canStartTracing(details.localPosition, tolerance: 30.0)) {
@@ -88,27 +88,26 @@ class _LetterTracingScreenState extends State<LetterTracingScreen>
       HapticFeedback.selectionClick();
     }
   }
-  
+
   void _handlePanUpdate(DragUpdateDetails details) {
     if (!_isTracing) return;
-    
+
     setState(() {
       _currentFingerPosition = details.localPosition;
-      
+
       // Check if finger is on the correct path (like staying inside the lines)
-      bool isOnPath = _pathTracker.isPositionOnPath(
-        details.localPosition, 
-        tolerance: 25.0  // How close they need to be (in pixels)
-      );
-      
+      bool isOnPath = _pathTracker.isPositionOnPath(details.localPosition,
+          tolerance: 30.0 // Increased tolerance for thicker letter
+          );
+
       if (isOnPath) {
         // Good! They're tracing correctly
         _pathTracker.updateProgress(details.localPosition);
         _totalProgress = _pathTracker.getOverallProgress();
-        
+
         // Give them haptic feedback (like a gentle vibration)
         HapticFeedback.lightImpact();
-        
+
         // Check if they completed the letter
         if (_pathTracker.isAllCompleted()) {
           _onLetterCompleted();
@@ -116,31 +115,31 @@ class _LetterTracingScreenState extends State<LetterTracingScreen>
       }
     });
   }
-  
+
   void _handlePanEnd(DragEndDetails details) {
     setState(() {
       _isTracing = false;
       _currentFingerPosition = null;
     });
   }
-  
+
   void _onLetterCompleted() {
     setState(() {
       _showCelebration = true;
     });
-    
+
     // Trigger celebration animation
     _celebrationController.forward();
-    
+
     // Heavy haptic feedback for success
     HapticFeedback.heavyImpact();
-    
+
     // Reset after celebration
     Future.delayed(Duration(seconds: 2), () {
       _resetLetter();
     });
   }
-  
+
   void _resetLetter() {
     setState(() {
       _showCelebration = false;
@@ -149,7 +148,7 @@ class _LetterTracingScreenState extends State<LetterTracingScreen>
     });
     _celebrationController.reset();
   }
-  
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -224,33 +223,7 @@ class _LetterTracingScreenState extends State<LetterTracingScreen>
                   ),
                 ),
               ),
-              
-              // Progress indicator (bottom left circle like in your image)
-              Positioned(
-                left: 20,
-                bottom: 20,
-                child: Container(
-                  width: 50,
-                  height: 50,
-                  decoration: BoxDecoration(
-                    color: _totalProgress >= 0.95 ? Colors.green : Colors.blue,
-                    shape: BoxShape.circle,
-                  ),
-                  child: Center(
-                    child: _totalProgress >= 0.95 
-                        ? Icon(Icons.check, color: Colors.white, size: 24)
-                        : Text(
-                            '${(_pathTracker.getCurrentSegment()?.order ?? 1)}',
-                            style: TextStyle(
-                              color: Colors.white,
-                              fontSize: 20,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                  ),
-                ),
-              ),
-              
+
               // Celebration overlay
               if (_showCelebration)
                 AnimatedBuilder(
@@ -261,7 +234,8 @@ class _LetterTracingScreenState extends State<LetterTracingScreen>
                       height: double.infinity,
                       decoration: BoxDecoration(
                         borderRadius: BorderRadius.circular(20),
-                        color: Colors.green.withOpacity(0.2 * _celebrationAnimation.value),
+                        color: Colors.green
+                            .withOpacity(0.2 * _celebrationAnimation.value),
                       ),
                       child: Center(
                         child: Transform.scale(
@@ -308,112 +282,85 @@ class PathTracker {
   late List<PathSegment> _segments;
   late Path _fullPath;
   int _currentSegmentIndex = 0;
-  
+
   void setupLetterI() {
     _segments = [];
     _fullPath = Path();
-    
-    // Letter "I" has 3 parts in proper formation order
-    // Think of it like following numbered steps in sequence
-    
-    // Step 1: Top horizontal line (left to right)
-    PathSegment topLine = PathSegment(
-      startPoint: Offset(100, 80),
-      endPoint: Offset(200, 80),
+
+    // Letter "I" as a simple vertical line (top to bottom)
+    PathSegment verticalLine = PathSegment(
+      startPoint: Offset(150, 100),
+      endPoint: Offset(150, 260),
       order: 1,
-      direction: 0, // Pointing right (0 radians)
+      direction: math.pi / 2,
+      // Pointing down (90 degrees)
       isActive: true, // Start with this one active
     );
-    
-    // Step 2: Middle vertical line (top to bottom)
-    PathSegment middleLine = PathSegment(
-      startPoint: Offset(150, 80),
-      endPoint: Offset(150, 220),
-      order: 2,
-      direction: math.pi / 2, // Pointing down (90 degrees)
-    );
-    
-    // Step 3: Bottom horizontal line (left to right)
-    PathSegment bottomLine = PathSegment(
-      startPoint: Offset(100, 220),
-      endPoint: Offset(200, 220),
-      order: 3,
-      direction: 0, // Pointing right (0 radians)
-    );
-    
-    _segments = [topLine, middleLine, bottomLine];
+
+    _segments = [verticalLine];
     _currentSegmentIndex = 0;
-    
-    // Create the full path for visual reference
-    _fullPath.moveTo(100, 80);
-    _fullPath.lineTo(200, 80);  // Top line
-    _fullPath.moveTo(150, 80);
-    _fullPath.lineTo(150, 220); // Middle line
-    _fullPath.moveTo(100, 220);
-    _fullPath.lineTo(200, 220); // Bottom line
+
+    // Create the full path for visual reference - ONLY the vertical line
+    _fullPath.moveTo(150, 100);
+    _fullPath.lineTo(150, 260); // Single vertical line only
   }
-  
+
   bool isPositionOnPath(Offset position, {required double tolerance}) {
     // Only check the currently active segment
     if (_currentSegmentIndex >= _segments.length) return false;
-    
+
     PathSegment currentSegment = _segments[_currentSegmentIndex];
-    
+
     // Check if they're starting near the arrow (start point)
     if (!currentSegment.isStarted) {
       double distanceToStart = (position - currentSegment.startPoint).distance;
       return distanceToStart <= tolerance;
     }
-    
+
     // If already started, check if they're on the path
     double distance = _distanceToLineSegment(
-      position, 
-      currentSegment.startPoint, 
-      currentSegment.endPoint
-    );
-    
+        position, currentSegment.startPoint, currentSegment.endPoint);
+
     return distance <= tolerance;
   }
-  
+
   bool canStartTracing(Offset position, {required double tolerance}) {
     // Check if user is near the start arrow of the current segment
     if (_currentSegmentIndex >= _segments.length) return false;
-    
+
     PathSegment currentSegment = _segments[_currentSegmentIndex];
     double distanceToStart = (position - currentSegment.startPoint).distance;
-    
+
     return distanceToStart <= tolerance;
   }
-  
+
   void updateProgress(Offset position) {
     if (_currentSegmentIndex >= _segments.length) return;
-    
+
     PathSegment currentSegment = _segments[_currentSegmentIndex];
-    
+
     // If not started yet, check if they're near the start arrow
     if (!currentSegment.isStarted) {
-      if (canStartTracing(position, tolerance: 25.0)) {
+      if (canStartTracing(position, tolerance: 30.0)) {
         currentSegment.isStarted = true;
       } else {
         return; // Can't trace until they start at the arrow
       }
     }
-    
+
     // Calculate progress along this segment
     double segmentProgress = _calculateSegmentProgress(
-      position, 
-      currentSegment.startPoint, 
-      currentSegment.endPoint
-    );
-    
+        position, currentSegment.startPoint, currentSegment.endPoint);
+
     // Only allow forward progress (no going backwards)
-    currentSegment.progress = math.max(currentSegment.progress, segmentProgress);
-    
+    currentSegment.progress =
+        math.max(currentSegment.progress, segmentProgress);
+
     // Mark as completed if they've traced most of it
     if (currentSegment.progress >= 0.85) {
       currentSegment.isCompleted = true;
       currentSegment.isActive = false;
-      
+
       // Move to next segment
       _currentSegmentIndex++;
       if (_currentSegmentIndex < _segments.length) {
@@ -421,7 +368,7 @@ class PathTracker {
       }
     }
   }
-  
+
   double getOverallProgress() {
     double totalProgress = 0.0;
     for (var segment in _segments) {
@@ -429,16 +376,16 @@ class PathTracker {
     }
     return totalProgress / _segments.length;
   }
-  
+
   PathSegment? getCurrentSegment() {
     if (_currentSegmentIndex >= _segments.length) return null;
     return _segments[_currentSegmentIndex];
   }
-  
+
   bool isAllCompleted() {
     return _currentSegmentIndex >= _segments.length;
   }
-  
+
   void reset() {
     _currentSegmentIndex = 0;
     for (int i = 0; i < _segments.length; i++) {
@@ -448,27 +395,29 @@ class PathTracker {
       _segments[i].isStarted = false;
     }
   }
-  
+
   List<PathSegment> get segments => _segments;
+
   Path get fullPath => _fullPath;
-  
+
   // Math helper: calculate distance from point to line segment
-  double _distanceToLineSegment(Offset point, Offset lineStart, Offset lineEnd) {
+  double _distanceToLineSegment(
+      Offset point, Offset lineStart, Offset lineEnd) {
     double A = point.dx - lineStart.dx;
     double B = point.dy - lineStart.dy;
     double C = lineEnd.dx - lineStart.dx;
     double D = lineEnd.dy - lineStart.dy;
-    
+
     double dot = A * C + B * D;
     double lenSq = C * C + D * D;
     double param = -1;
-    
+
     if (lenSq != 0) {
       param = dot / lenSq;
     }
-    
+
     double xx, yy;
-    
+
     if (param < 0) {
       xx = lineStart.dx;
       yy = lineStart.dy;
@@ -479,24 +428,26 @@ class PathTracker {
       xx = lineStart.dx + param * C;
       yy = lineStart.dy + param * D;
     }
-    
+
     double dx = point.dx - xx;
     double dy = point.dy - yy;
     return math.sqrt(dx * dx + dy * dy);
   }
-  
+
   // Calculate how far along a line segment the point is
-  double _calculateSegmentProgress(Offset point, Offset lineStart, Offset lineEnd) {
+  double _calculateSegmentProgress(
+      Offset point, Offset lineStart, Offset lineEnd) {
     double totalLength = (lineEnd - lineStart).distance;
     if (totalLength == 0) return 1.0;
-    
+
     // Project point onto line
     Offset lineVector = lineEnd - lineStart;
     Offset pointVector = point - lineStart;
-    
-    double dotProduct = pointVector.dx * lineVector.dx + pointVector.dy * lineVector.dy;
+
+    double dotProduct =
+        pointVector.dx * lineVector.dx + pointVector.dy * lineVector.dy;
     double param = dotProduct / (totalLength * totalLength);
-    
+
     return math.max(0.0, math.min(1.0, param));
   }
 }
@@ -511,7 +462,7 @@ class PathSegment {
   bool isCompleted;
   bool isActive; // Is this the current segment to trace?
   bool isStarted; // Has user started tracing this segment?
-  
+
   PathSegment({
     required this.startPoint,
     required this.endPoint,
@@ -530,234 +481,183 @@ class LetterIPainter extends CustomPainter {
   final Offset? currentPosition;
   final bool isTracing;
   final double progress;
-  
+
   LetterIPainter({
     required this.pathTracker,
     this.currentPosition,
     required this.isTracing,
     required this.progress,
   });
-  
+
   @override
   void paint(Canvas canvas, Size size) {
-    // Draw each segment of the letter "I"
+    // Draw guidelines first (behind the letter)
+    //_drawGuidelines(canvas, size);
+
+    // Draw the single vertical line segment
     for (var segment in pathTracker.segments) {
       _drawSegment(canvas, segment);
     }
-    
-    // Draw the current finger position (like a cursor)
+
+    // Draw the current finger position
     if (currentPosition != null && isTracing) {
       _drawFingerIndicator(canvas, currentPosition!);
     }
-    
-    // Draw guidelines (light grid lines like notebook paper)
-    _drawGuidelines(canvas, size);
   }
-  
+
   void _drawSegment(Canvas canvas, PathSegment segment) {
-    // Different colors based on segment state
-    Color segmentColor;
-    double opacity;
-    
-    if (segment.isCompleted) {
-      segmentColor = Colors.green;
-      opacity = 1.0;
-    } else if (segment.isActive) {
-      segmentColor = Colors.blue;
-      opacity = 0.8;
-    } else {
-      segmentColor = Colors.grey;
-      opacity = 0.3;
-    }
-    
-    // Paint for the dotted outline (untraced part)
-    Paint dottedPaint = Paint()
-      ..color = segmentColor.withOpacity(opacity * 0.4)
-      ..strokeWidth = 8
-      ..style = PaintingStyle.stroke;
-    
-    // Paint for the solid line (traced part)
-    Paint solidPaint = Paint()
-      ..color = segmentColor
-      ..strokeWidth = 8
+    // Paint for the background line (light blue)
+    Paint backgroundPaint = Paint()
+      ..color = Colors.blue.withOpacity(0.3)
+      ..strokeWidth = 40
       ..style = PaintingStyle.stroke
-      ..strokeCap = StrokeCap.round;
-    
-    // Draw dotted line manually (Flutter doesn't have built-in dash)
-    _drawDottedLine(canvas, segment.startPoint, segment.endPoint, dottedPaint);
-    
+      ..strokeCap = StrokeCap.butt; // Changed to butt to avoid rounded ends
+
+    // Paint for the traced line (solid blue)
+    Paint tracedPaint = Paint()
+      ..color = segment.isCompleted ? Colors.green : Colors.blue
+      ..strokeWidth = 40
+      ..style = PaintingStyle.stroke
+      ..strokeCap = StrokeCap.butt; // Changed to butt to avoid rounded ends
+
+    // Draw the full line in light blue (untraced part)
+    canvas.drawLine(segment.startPoint, segment.endPoint, backgroundPaint);
+
+    // Draw thick blue dashed line in the middle of the letter
+    _drawMiddleDashedLine(canvas, segment);
+
     // Draw solid line for completed portion
     if (segment.progress > 0 || segment.isCompleted) {
       double drawProgress = segment.isCompleted ? 1.0 : segment.progress;
-      
+
       Offset progressPoint = Offset(
-        segment.startPoint.dx + (segment.endPoint.dx - segment.startPoint.dx) * drawProgress,
-        segment.startPoint.dy + (segment.endPoint.dy - segment.startPoint.dy) * drawProgress,
+        segment.startPoint.dx +
+            (segment.endPoint.dx - segment.startPoint.dx) * drawProgress,
+        segment.startPoint.dy +
+            (segment.endPoint.dy - segment.startPoint.dy) * drawProgress,
       );
-      
-      Path solidPath = Path();
-      solidPath.moveTo(segment.startPoint.dx, segment.startPoint.dy);
-      solidPath.lineTo(progressPoint.dx, progressPoint.dy);
-      
-      canvas.drawPath(solidPath, solidPaint);
+
+      canvas.drawLine(segment.startPoint, progressPoint, tracedPaint);
     }
-    
+
     // Draw directional arrow for active segment
-    if (segment.isActive && !segment.isCompleted) {
-      _drawDirectionalArrow(canvas, segment);
-    }
-    
-    // Draw step number
-    _drawStepNumber(canvas, segment);
-  }
-  
-  void _drawDottedLine(Canvas canvas, Offset start, Offset end, Paint paint) {
-    double totalDistance = (end - start).distance;
-    double dashLength = 10.0;
-    double gapLength = 5.0;
-    double dashGapLength = dashLength + gapLength;
-    
-    int dashCount = (totalDistance / dashGapLength).floor();
-    
-    for (int i = 0; i < dashCount; i++) {
-      double startRatio = (i * dashGapLength) / totalDistance;
-      double endRatio = ((i * dashGapLength) + dashLength) / totalDistance;
-      
-      Offset dashStart = Offset(
-        start.dx + (end.dx - start.dx) * startRatio,
-        start.dy + (end.dy - start.dy) * startRatio,
-      );
-      
-      Offset dashEnd = Offset(
-        start.dx + (end.dx - start.dx) * endRatio,
-        start.dy + (end.dy - start.dy) * endRatio,
-      );
-      
-      canvas.drawLine(dashStart, dashEnd, paint);
+    if (segment.isActive && !segment.isCompleted && !segment.isStarted) {
+      _drawStartIndicator(canvas, segment);
     }
   }
-  
-  void _drawDirectionalArrow(Canvas canvas, PathSegment segment) {
-    // Draw a pulsating arrow at the start point
-    Paint arrowPaint = Paint()
-      ..color = Colors.red
-      ..style = PaintingStyle.fill;
-    
-    // Create arrow shape pointing in the segment direction
-    Path arrowPath = Path();
-    
-    // Arrow dimensions
-    double arrowLength = 25.0;
-    double arrowWidth = 15.0;
-    
-    // Calculate arrow points based on direction
-    double cosDir = math.cos(segment.direction);
-    double sinDir = math.sin(segment.direction);
-    
-    // Arrow tip
-    Offset tip = Offset(
-      segment.startPoint.dx + cosDir * arrowLength,
-      segment.startPoint.dy + sinDir * arrowLength,
-    );
-    
-    // Arrow base corners
-    Offset base1 = Offset(
-      segment.startPoint.dx - cosDir * 5 + sinDir * arrowWidth,
-      segment.startPoint.dy - sinDir * 5 - cosDir * arrowWidth,
-    );
-    
-    Offset base2 = Offset(
-      segment.startPoint.dx - cosDir * 5 - sinDir * arrowWidth,
-      segment.startPoint.dy - sinDir * 5 + cosDir * arrowWidth,
-    );
-    
-    // Draw arrow
-    arrowPath.moveTo(tip.dx, tip.dy);
-    arrowPath.lineTo(base1.dx, base1.dy);
-    arrowPath.lineTo(base2.dx, base2.dy);
-    arrowPath.close();
-    
-    canvas.drawPath(arrowPath, arrowPaint);
-    
-    // Draw a pulsating circle at start point
+
+  void _drawMiddleDashedLine(Canvas canvas, PathSegment segment) {
+    // Paint for the dashes
+    final Paint dashedPaint = Paint()
+      ..color = Colors.blue
+      ..strokeWidth = 2
+      ..style = PaintingStyle.stroke;
+
+    // Compute the X position halfway between start and end
+    final double middleX = (segment.startPoint.dx + segment.endPoint.dx) / 2;
+
+    // We'll dash along the vertical span of the segment
+    final double startY = segment.startPoint.dy;
+    final double endY = segment.endPoint.dy;
+
+    // Dash configuration
+    const double dashHeight = 6;
+    const double dashSpace = 4;
+
+    double currentY = startY;
+    while (currentY < endY) {
+      final double nextY = math.min(currentY + dashHeight, endY);
+      // Draw a vertical dash from (middleX, currentY) to (middleX, nextY)
+      canvas.drawLine(
+        Offset(middleX, currentY),
+        Offset(middleX, nextY),
+        dashedPaint,
+      );
+      currentY += dashHeight + dashSpace;
+    }
+  }
+
+  void _drawStartIndicator(Canvas canvas, PathSegment segment) {
+    // Tweak these to taste
+    final double circleRadius = 20; // was 25
+    final double shaftHalfLength = 6; // was 10
+    final double arrowHeadHalfWidth = 8; // was 8
+    final double arrowHeadHeight = 8; // was 12
+
+    // Draw smaller blue circle
     Paint circlePaint = Paint()
-      ..color = Colors.red.withOpacity(0.3)
+      ..color = Colors.blue
       ..style = PaintingStyle.fill;
-    
-    canvas.drawCircle(segment.startPoint, 20, circlePaint);
-  }
-  
-  void _drawStepNumber(Canvas canvas, PathSegment segment) {
-    // Draw step number near the start point
-    Paint numberBackgroundPaint = Paint()
-      ..color = segment.isCompleted ? Colors.green : 
-                 segment.isActive ? Colors.blue : Colors.grey
+    canvas.drawCircle(segment.startPoint, circleRadius, circlePaint);
+
+    // Shaft of the arrow
+    Paint shaftPaint = Paint()
+      ..color = Colors.white
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 3
+      ..strokeCap = StrokeCap.round;
+    canvas.drawLine(
+      Offset(segment.startPoint.dx, segment.startPoint.dy - shaftHalfLength),
+      Offset(segment.startPoint.dx, segment.startPoint.dy + shaftHalfLength),
+      shaftPaint,
+    );
+
+    // Arrowhead (triangle)
+    Paint headFill = Paint()
+      ..color = Colors.white
       ..style = PaintingStyle.fill;
-    
-    // Position for number (offset from start point)
-    Offset numberPosition = Offset(
-      segment.startPoint.dx - 30,
-      segment.startPoint.dy - 30,
-    );
-    
-    // Draw circle background for number
-    canvas.drawCircle(numberPosition, 15, numberBackgroundPaint);
-    
-    // Draw number text
-    TextPainter textPainter = TextPainter(
-      text: TextSpan(
-        text: segment.order.toString(),
-        style: TextStyle(
-          color: Colors.white,
-          fontSize: 16,
-          fontWeight: FontWeight.bold,
-        ),
-      ),
-      textDirection: TextDirection.ltr,
-    );
-    
-    textPainter.layout();
-    textPainter.paint(
-      canvas,
-      Offset(
-        numberPosition.dx - textPainter.width / 2,
-        numberPosition.dy - textPainter.height / 2,
-      ),
-    );
+    Path head = Path()
+      ..moveTo(segment.startPoint.dx - arrowHeadHalfWidth,
+          segment.startPoint.dy + (shaftHalfLength - 2))
+      ..lineTo(segment.startPoint.dx + arrowHeadHalfWidth,
+          segment.startPoint.dy + (shaftHalfLength - 2))
+      ..lineTo(segment.startPoint.dx,
+          segment.startPoint.dy + (shaftHalfLength - 2) + arrowHeadHeight)
+      ..close();
+    canvas.drawPath(head, headFill);
   }
-  
+
   void _drawFingerIndicator(Canvas canvas, Offset position) {
     // Draw a circle where their finger is
     Paint fingerPaint = Paint()
       ..color = Colors.blue.withOpacity(0.7)
       ..style = PaintingStyle.fill;
-    
-    canvas.drawCircle(position, 15, fingerPaint);
-    
+
+    canvas.drawCircle(position, 20, fingerPaint);
+
     // Draw a white center
     Paint centerPaint = Paint()
       ..color = Colors.white
       ..style = PaintingStyle.fill;
-    
-    canvas.drawCircle(position, 8, centerPaint);
+
+    canvas.drawCircle(position, 10, centerPaint);
   }
-  
-  void _drawGuidelines(Canvas canvas, Size size) {
-    // Draw light horizontal lines like notebook paper
-    Paint guidelinePaint = Paint()
-      ..color = Colors.grey.withOpacity(0.2)
-      ..strokeWidth = 1;
-    
-    // Draw horizontal lines
-    for (double y = 80; y <= 220; y += 35) {
-      canvas.drawLine(
-        Offset(50, y),
-        Offset(250, y),
-        guidelinePaint,
-      );
-    }
-  }
-  
+
+  // void _drawGuidelines(Canvas canvas, Size size) {
+  //   // Draw horizontal dashed line through the middle of the letter
+  //   Paint guidelinePaint = Paint()
+  //     ..color = Colors.grey.withOpacity(0.2)
+  //     ..strokeWidth = 2
+  //     ..style = PaintingStyle.stroke;
+  //
+  //   // Calculate middle Y position (halfway between start and end of letter)
+  //   double middleY = 180; // Middle of the letter
+  //
+  //   // Create dashed line effect
+  //   double dashWidth = 10;
+  //   double dashSpace = 5;
+  //   double currentX = 80; // Start a bit before the letter
+  //   double endX = 220; // End a bit after the letter
+  //
+  //   while (currentX < endX) {
+  //     canvas.drawLine(
+  //         Offset(currentX, middleY),
+  //         Offset(math.min(currentX + dashWidth, endX), middleY),
+  //         guidelinePaint);
+  //     currentX += dashWidth + dashSpace;
+  //   }
+  // }
+
   @override
   bool shouldRepaint(covariant CustomPainter oldDelegate) {
     return true; // Always repaint when state changes
